@@ -3,7 +3,7 @@ import sqlite3
 
 class SQL_atm:
     """Create table Users_data"""
-
+    # создаем новую таблицу в БД, если ее нет
     @staticmethod
     def create_table():
         with sqlite3.connect("atm") as db:
@@ -16,7 +16,7 @@ class SQL_atm:
             print("Data Base create successfully")
 
     """Create new user"""
-
+    # Создаем нового пользователя
     @staticmethod
     def insert_user(data_users):
         with sqlite3.connect("atm") as db:
@@ -26,7 +26,7 @@ class SQL_atm:
             print("Add new user")
 
     """Enter the card number"""
-
+    # Создаем метод для ввода номера карты
     @staticmethod
     def input_card(number_card):
         try:
@@ -45,7 +45,7 @@ class SQL_atm:
             print("Card number not found")
 
     """PINCODE method"""
-
+    # Создаем метод для ввода пин-кода от карты пользователя
     @staticmethod
     def input_code(number_card):
         pin_code = input("Enter the card pin-code: ")
@@ -66,7 +66,7 @@ class SQL_atm:
                 return False
 
     """Card balance method"""
-
+    # Создаем метод для просмотра баланса по карте текущего пользователя
     @staticmethod
     def info_balance(number_card):
 
@@ -78,7 +78,7 @@ class SQL_atm:
             print(f'Balance your card: {balance_card}')
 
     """Withdraw method"""
-
+    # Создаем метод снятия наличных с карты текущего пользователя
     @staticmethod
     def withdraw_money(number_card):
 
@@ -103,7 +103,7 @@ class SQL_atm:
                 return False
 
     """Deposit method"""
-
+    # Создаем метод для пополнения карты текущего пользователя
     @staticmethod
     def depositing_money(number_card):
 
@@ -120,7 +120,7 @@ class SQL_atm:
                 return False
 
     """Selecting a card transaction method"""
-
+    # Создаем метод для выбора операции с картой после запуска банкомата
     @staticmethod
     def input_operation(number_card):
         while True:
