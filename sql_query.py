@@ -123,22 +123,26 @@ class SQL_atm:
 
     @staticmethod
     def input_operation(number_card):
-        operation = input("Selecting a card transaction: \n"
-                          "1. Find out the balance on the card\n"
-                          "2. Withdraw funds from the card\n"
-                          "3. Add funds to the card balance\n"
-                          "4. Complete card transactions\n")
-        if operation == "1":
-            SQL_atm.info_balance(number_card)
+        while True:
+            operation = input("Selecting a card transaction: \n"
+                              "1. Find out the balance on the card\n"
+                              "2. Withdraw funds from the card\n"
+                              "3. Add funds to the card balance\n"
+                              "4. Complete card transactions\n")
 
-        elif operation == "2":
-            SQL_atm.withdraw_money(number_card)
+            if operation == "1":
+                SQL_atm.info_balance(number_card)
 
-        elif operation == "3":
-            SQL_atm.depositing_money(number_card)
+            elif operation == "2":
+                SQL_atm.withdraw_money(number_card)
 
-        elif operation == "4":
-            print("Thank you for visiting us, all the best")
+            elif operation == "3":
+                SQL_atm.depositing_money(number_card)
 
-        else:
-            print("This card transaction is unknown.")
+            elif operation == "4":
+                print("Thank you for visiting us, all the best")
+                return False
+
+            else:
+                print("This card transaction is unknown. Try selecting a different card transaction.")
+
