@@ -1,4 +1,7 @@
+import os
 import sqlite3
+import csv
+from datetime import datetime
 
 
 class SqlAtm:
@@ -168,77 +171,154 @@ class SqlAtm:
             print("Invalid deposit amount")
             return False
 
+    # Report operation 1: отчет об операции
+    @staticmethod
+    def report_operation_1(now_date, number_card, type_operation, amount, payee):
+        """Save transfer operation to report_1.csv"""
+
+        try:
+            with open("report_1.csv", "a", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file, delimiter=";")
+
+                # Добавляем заголовки, если файл пустой
+                if file.tell() == 0:
+                    writer.writerow([
+                        "Data",
+                        "Number_card",
+                        "Type_operation",
+                        "Amount",
+                        "Payee"
+                    ])
+
+                # Записываем данные о переводе
+                writer.writerow([
+                    now_date,
+                    number_card,
+                    type_operation,
+                    amount,
+                    payee
+                ])
+
+            print("The data is entered into the report_1.csv")
+            return True
+
+        except OSError as error:
+            print(f"Error writing to  report_1.csv: {error}")
+            return False
+
+    # Report operation 2: добавляет информацию об успешном переводе в файл report_2.csv
+    @staticmethod
+    def report_operation_2(now_date, payee, type_operation, amount, number_card):
+
+        try:
+            with open("report_2.csv", "a", newline="") as file:
+                writer = csv.writer(file, delimiter=";")
+
+                # Добавляем заголовки, если файл пустой
+                if file.tell() == 0:
+                    user_data = [
+                        ("Date", "Payee", "Type operation", "Amount", "Sender")
+                    ]
+                    writer.writerows(user_data)
+
+                # Записываем данные об операции
+                user_data = [
+                    (now_date, payee, type_operation, amount, number_card)
+                ]
+
+                writer.writerows(user_data)
+
+            print("The data is entered into the report_2.csv")
+            return True
+
+        except OSError as error:
+            print(f"Error writing to  report_2.csv: {error}")
+            return False
+
     # Создаем метод для перевода денежных средств между клиентами
     @staticmethod
     def transfer_money(number_card):
         """Transfer money method"""
 
         recipient_card = input("Enter the recipient's card number: ")
-        amount = input("Enter the amount you want to transfer: ")
+        amount_input = input("Enter the amount you want to transfer: ")
 
         try:
-            amount = int(amount)
-            if amount <= 0:
-                print("The transfer amount must be greater than zero")
+            amount = int(amount_input)
+        except ValueError:
+            print("Invalid transfer amount. Enter a whole number")
+            return False
+
+        if amount <= 0:
+            print("The transfer amount must be greater than zero")
+            return False
+
+        if recipient_card == str(number_card):
+            print("You cannot transfer money to your own card")
+            return False
+
+        with sqlite3.connect("atm") as db:
+            cur = db.cursor()
+
+            # Проверяем существование карты отправителя
+            cur.execute("""SELECT Balance 
+                    FROM Users_data 
+                    WHERE Number_card = ?;""",
+                        (number_card,))
+            sender = cur.fetchone()
+
+            if sender is None:
+                print("Sender card not found")
                 return False
 
-            with sqlite3.connect("atm") as db:
-                cur = db.cursor()
-
-                # Проверяем существование карты отправителя
-                cur.execute("""SELECT Balance 
+            # Проверяем существование карты получателя
+            cur.execute("""SELECT Number_card 
                     FROM Users_data 
                     WHERE Number_card = ?;""",
-                            (number_card,))
-                sender = cur.fetchone()
+                        (recipient_card,))
+            recipient = cur.fetchone()
 
-                if sender is None:
-                    print("Sender card not found")
-                    return False
+            if recipient is None:
+                print("Recipient card not found")
+                return False
 
-                # Проверяем существование карты получателя
-                cur.execute("""SELECT Number_card 
-                    FROM Users_data 
-                    WHERE Number_card = ?;""",
-                            (recipient_card,))
-                recipient = cur.fetchone()
+            # Запрещаем перевод самому себе
+            if number_card == recipient_card:
+                print("You cannot transfer money to your own card")
+                return False
 
-                if recipient is None:
-                    print("Recipient card not found")
-                    return False
+            # Проверяем наличие достаточного количества денег на балансе
+            balance = sender[0]
+            if amount > balance:
+                print("There are insufficient funds on your card")
+                return False
 
-                # Запрещаем перевод самому себе
-                if number_card == recipient_card:
-                    print("You cannot transfer money to your own card")
-                    return False
-
-                # Проверяем наличие достаточного количества денег на балансе
-                balance = sender[0]
-                if amount > balance:
-                    print("There are insufficient funds on your card")
-                    return False
-
-                # Списываем деньги с карты отправителя
-                cur.execute("""UPDATE Users_data 
+            # Списываем деньги с карты отправителя
+            cur.execute("""UPDATE Users_data 
                     SET Balance = Balance - ? 
                     WHERE Number_card = ?;""",
-                            (amount, number_card))
+                        (amount, number_card))
 
-                # Зачисляем деньги на карту получателя
-                cur.execute("""UPDATE Users_data
+            # Зачисляем деньги на карту получателя
+            cur.execute("""UPDATE Users_data
                     SET Balance = Balance + ?
                     WHERE Number_card = ?;""",
-                            (amount, recipient_card))
+                        (amount, recipient_card))
 
-                db.commit()
+            db.commit()
 
-                print(f"Transfer of {amount} successfully completed to card {recipient_card}")
-                SqlAtm.info_balance(number_card)
-                return True
+        # Создаем переменную для даты для использования в репортах
+        now_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        payee = recipient_card
+        type_operation = 3
 
-        except ValueError:
-            print("Invalid transfer amount")
-            return False
+        print(f"Transfer of {amount} successfully completed to card {recipient_card}")
+
+        SqlAtm.report_operation_1(now_date, number_card, type_operation, amount, recipient_card)
+        SqlAtm.report_operation_2(now_date, recipient_card, type_operation, amount, number_card)
+        SqlAtm.info_balance(number_card)
+
+        return True
 
     # Создаем метод для выбора операции с картой после запуска банкомата
     @staticmethod

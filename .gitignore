@@ -168,3 +168,7 @@ screen
 
 # db
 atm
+
+# csv
+report_1.csv
+report_2.csv
